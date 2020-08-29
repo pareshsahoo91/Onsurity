@@ -1,0 +1,46 @@
+#Creating a deployment object from a custom tomcat
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+ name: paresh-deploy
+ labels:
+  app: paresh-tom
+spec:
+ replicas: 5
+ selector:
+  matchLabels:
+    app: paresh-tom
+    tier: frontend
+    env: prod
+ template:
+  metadata:
+   name: pareshapp
+   labels:
+    app: paresh-tom
+    tier: frontend
+    env: prod
+  spec:
+   containers:
+   - name: tomcat-container
+     image: docker.io/pareshkaps/learning_devops:latest
+     imagePullPolicy: Always
+     ports:
+     - containerPort: 8080
+---
+#Creating NodePort service for PareshTom
+apiVersion: v1
+kind: Service
+metadata:
+ name: pareshtom-svc
+ labels:
+  app: paresh-tom
+spec:
+ selector:
+  app: paresh-tom
+  tier: frontend
+  env: prod
+ type: NodePort
+ ports:
+ - nodePort: 31000
+   port: 8080
+   targetPort: 8080
