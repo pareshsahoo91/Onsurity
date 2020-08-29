@@ -1,0 +1,40 @@
+node {
+    def maven_home= tool name: "mymaven", type: "maven"
+    def maven_cmd="${maven_home}/bin/mvn"
+    
+    stage ('git checkout') {
+        script {
+            echo "downloading the codes from git hub"
+            git 'https://github.com/pareshsahoo91/Onsurity.git'
+        }
+    }
+    stage ('maven packaging') {
+        script {
+            echo "packaging the code to a WAR file"
+            sh "${maven_cmd} clean install package"
+        }
+    }
+    stage ('building docker image file') {
+        script {
+            echo "creating a dockerfile"
+            sh "docker build -t docker.io/pareshkaps/learning_devops':$BUILD_NUMBER' ."
+        } 
+    }
+    stage ('push dockerimage') {
+        script {
+            echo "pushing the docker image file to docker hub"
+            withCredentials([string(credentialsId: 'Docker_hub_cred', variable: 'Docker_hub_cred')]) {
+            sh "docker login -u pareshkaps -p ${Docker_hub_cred}"
+            }
+            sh "docker push docker.io/pareshkaps/learning_devops':$BUILD_NUMBER'"
+        }
+    }
+    stage ('Deploy pod in k8s') {
+        script {
+            echo "deploying the PareshWar file in kubernetes pod"
+            sh "kubectl apply -f pareshtom-k8s.yaml"
+            sh "kubectl set image deploy paresh-deploy tomcat-container=docker.io/pareshkaps/learning_devops':$BUILD_NUMBER'"
+            
+        }
+    }
+}
